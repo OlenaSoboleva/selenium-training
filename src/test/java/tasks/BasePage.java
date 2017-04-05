@@ -1,4 +1,4 @@
-package task11;
+package tasks;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -18,10 +18,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static junit.framework.Assert.assertTrue;
 
 public class BasePage {
+    static public String siteLink;
+
+    static {
+        siteLink = "http://localhost/litecart";
+    }
+
+
 
     public static ThreadLocal<WebDriver> tlDriver;
 
@@ -57,23 +65,57 @@ public class BasePage {
 
     public boolean isElementPresent(WebDriver driver, By locator) {
         try {
-            driver.findElement(locator);
-            return true;
-        } catch (NoSuchElementException ex) {
-            return false;
+            driver.manage().timeouts().implicitlyWait(10,TimeUnit.SECONDS);
+            return driver.findElements(locator).size()>0;
+        } finally {
+            driver.manage().timeouts().implicitlyWait(0,TimeUnit.SECONDS);
         }
     }
+
 
     public boolean areElementsPresent(WebDriver driver, By locator) {
         return driver.findElements(locator).size() > 0;
     }
+
 
     public void loginToSite(String link, String locator) {
         driver.navigate().to(link);
         wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector(locator)));
         assertTrue(isElementPresent(driver, By.cssSelector(locator)));
     }
+    public void loginToSiteMainPage(String locator) {
+        driver.navigate().to(siteLink);
+        wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector(locator)));
+        assertTrue(isElementPresent(driver, By.cssSelector(locator)));
+    }
 
+    public void LoginToAdmin() throws Throwable {
+        String stringinput = "admin";
+        driver.navigate().to("http://localhost/litecart/admin");
+        assertTrue(isElementPresent(driver, By.cssSelector("[name=username]")));
+        driver.findElement(By.name("username")).sendKeys(stringinput);
+        driver.findElement(By.name("password")).sendKeys(stringinput);
+        driver.findElement(By.name("login")).click();
+        wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id='sidebar']")));
+
+    }
+    public boolean checkSortList(List list) {
+        return list.stream().sorted().collect(Collectors.toList()).equals(list);
+    }
+
+    public void manipulation(List list,String link,String locator){
+        for (int i = 0; i < list.size(); i++) {
+            driver.findElement((By.xpath(list.get(i).toString()))).click();
+            wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("[name=name]")));
+            if (checkSortList(elementsToList("locator"))) {
+                System.out.println("State " + list.get(i).toString() + "sorted= true");
+            } else {
+                System.out.println("State " + list.get(i).toString() + "sorted= false");
+            }
+            driver.navigate().to(link);
+        }
+
+    }
 
     public List elementsToList(String locator) {
         List<WebElement> CountryList = driver.findElements(By.xpath(locator));

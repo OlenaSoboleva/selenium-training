@@ -1,4 +1,4 @@
-package task11;
+package tasks;
 
 import org.junit.Test;
 import org.openqa.selenium.By;
@@ -11,7 +11,7 @@ import static junit.framework.Assert.assertTrue;
 /**
  * Created by osob on 3/30/2017.
  */
-public class Main extends BasePage {
+public class task11 extends BasePage {
     String newAccountLink = "http://localhost/litecart/en/create_account";
 
     @Test

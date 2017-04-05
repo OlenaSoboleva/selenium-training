@@ -1,4 +1,4 @@
-package task11;
+package tasks;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -9,7 +9,6 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.Select;
 
 import java.io.File;
-import java.security.Key;
 import java.util.Date;
 
 import static junit.framework.Assert.assertTrue;
