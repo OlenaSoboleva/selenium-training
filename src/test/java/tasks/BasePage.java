@@ -4,31 +4,28 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.openqa.selenium.By;
-import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.firefox.FirefoxOptions;
 import org.openqa.selenium.remote.DesiredCapabilities;
+import org.openqa.selenium.support.ui.ExpectedCondition;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static junit.framework.Assert.assertTrue;
 
 public class BasePage {
-    static public String siteLink;
+    static private String siteLink, adminLink;
 
     static {
         siteLink = "http://localhost/litecart";
+        adminLink = "http://localhost/litecart/admin";
     }
-
 
 
     public static ThreadLocal<WebDriver> tlDriver;
@@ -65,10 +62,10 @@ public class BasePage {
 
     public boolean isElementPresent(WebDriver driver, By locator) {
         try {
-            driver.manage().timeouts().implicitlyWait(10,TimeUnit.SECONDS);
-            return driver.findElements(locator).size()>0;
+            driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
+            return driver.findElements(locator).size() > 0;
         } finally {
-            driver.manage().timeouts().implicitlyWait(0,TimeUnit.SECONDS);
+            driver.manage().timeouts().implicitlyWait(0, TimeUnit.SECONDS);
         }
     }
 
@@ -83,6 +80,7 @@ public class BasePage {
         wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector(locator)));
         assertTrue(isElementPresent(driver, By.cssSelector(locator)));
     }
+
     public void loginToSiteMainPage(String locator) {
         driver.navigate().to(siteLink);
         wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector(locator)));
@@ -91,7 +89,7 @@ public class BasePage {
 
     public void LoginToAdmin() throws Throwable {
         String stringinput = "admin";
-        driver.navigate().to("http://localhost/litecart/admin");
+        driver.navigate().to(adminLink);
         assertTrue(isElementPresent(driver, By.cssSelector("[name=username]")));
         driver.findElement(By.name("username")).sendKeys(stringinput);
         driver.findElement(By.name("password")).sendKeys(stringinput);
@@ -99,11 +97,12 @@ public class BasePage {
         wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id='sidebar']")));
 
     }
+
     public boolean checkSortList(List list) {
         return list.stream().sorted().collect(Collectors.toList()).equals(list);
     }
 
-    public void manipulation(List list,String link,String locator){
+    public void manipulation(List list, String link, String locator) {
         for (int i = 0; i < list.size(); i++) {
             driver.findElement((By.xpath(list.get(i).toString()))).click();
             wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("[name=name]")));
@@ -148,6 +147,16 @@ public class BasePage {
         return hashMap;
     }
 
+    public ExpectedCondition<String> anyWindowOtherThan(Set<String> existingWindows) {
+        return new ExpectedCondition<String>() {
+            public String apply(WebDriver driver) {
+                Set<String> handles = driver.getWindowHandles();
+                handles.removeAll(existingWindows);
+                return handles.size() > 0 ? handles.iterator().next() : null;
+            }
+
+        };
+    }
 
     public String rgb(String color) {
         String[] numbers;
