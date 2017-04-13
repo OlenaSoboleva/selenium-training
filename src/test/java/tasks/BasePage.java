@@ -1,18 +1,26 @@
 package tasks;
 
+import net.lightbody.bmp.BrowserMobProxy;
+import net.lightbody.bmp.BrowserMobProxyServer;
+import net.lightbody.bmp.client.ClientUtil;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.openqa.selenium.By;
+import org.openqa.selenium.Proxy;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.firefox.FirefoxDriver;
-import org.openqa.selenium.firefox.FirefoxOptions;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.logging.LogEntry;
+import org.openqa.selenium.remote.CapabilityType;
 import org.openqa.selenium.remote.DesiredCapabilities;
+import org.openqa.selenium.support.events.AbstractWebDriverEventListener;
+import org.openqa.selenium.support.events.EventFiringWebDriver;
 import org.openqa.selenium.support.ui.ExpectedCondition;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
+import java.net.MalformedURLException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -27,27 +35,57 @@ public class BasePage {
         adminLink = "http://localhost/litecart/admin";
     }
 
-
-    public static ThreadLocal<WebDriver> tlDriver;
-
+    public static ThreadLocal<EventFiringWebDriver> tlDriver;
+//    public static ThreadLocal<WebDriver> tlDriver;
     static {
         tlDriver = new ThreadLocal<>();
     }
-
-    public WebDriver driver;
+//    public WebDriver driver;
+    public EventFiringWebDriver driver;
     public WebDriverWait wait;
+    public BrowserMobProxy proxy;
+
+    public static class MyListener extends AbstractWebDriverEventListener {
+        @Override
+        public void beforeFindBy(By by, WebElement element, WebDriver driver) {
+            System.out.println(by);
+        }
+
+        @Override
+        public void onException(Throwable throwable, WebDriver driver) {
+            System.out.println(throwable);
+        }
+
+        @Override
+        public void afterFindBy(By by, WebElement element, WebDriver driver) {
+            System.out.println(by + " found");
+        }
+    }
 
     @Before
-    public void start() {
+    public void start() throws MalformedURLException {
         if (tlDriver.get() != null) {
             driver = tlDriver.get();
             wait = new WebDriverWait(driver, 10);
             return;
         }
-
-        DesiredCapabilities caps = new DesiredCapabilities();
-        caps.setCapability(FirefoxDriver.MARIONETTE, false);
-        driver = new FirefoxDriver(new FirefoxOptions().setLegacy(true));
+        proxy = new BrowserMobProxyServer();
+        proxy.start(0);
+        Proxy seleniumProxy = ClientUtil.createSeleniumProxy(proxy);
+        DesiredCapabilities capabilities = new DesiredCapabilities();
+        capabilities.setCapability(CapabilityType.PROXY, seleniumProxy);
+//        DesiredCapabilities caps = DesiredCapabilities.internetExplorer();
+//        caps.setCapability("platform", "Windows 8.1");
+//        caps.setCapability("version", "11.0");
+//        caps.setCapability(FirefoxDriver.MARIONETTE, false);
+//        driver = new FirefoxDriver(new FirefoxOptions().setLegacy(true));
+        driver = new EventFiringWebDriver(new ChromeDriver(capabilities));
+//          driver = new ChromeDriver();
+        driver.register(new MyListener());
+//        new RemoteWebDriver(new URL("http://192.168.4.103:4444/wd/hub"),//DesiredCapabilities.firefox());
+//                DesiredCapabilities.internetExplorer());
+//        new RemoteWebDriver(new URL("http://ondemand.saucelabs.com:80/wd/hub"),//DesiredCapabilities.firefox());
+//                DesiredCapabilities.internetExplorer());
         driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
         tlDriver.set(driver);
         wait = new WebDriverWait(driver, 10);
@@ -68,7 +106,6 @@ public class BasePage {
             driver.manage().timeouts().implicitlyWait(0, TimeUnit.SECONDS);
         }
     }
-
 
     public boolean areElementsPresent(WebDriver driver, By locator) {
         return driver.findElements(locator).size() > 0;
@@ -157,6 +194,15 @@ public class BasePage {
 
         };
     }
+
+    public void getBrowserLogs() {
+        for (LogEntry l : driver.manage().logs().get("browser").getAll()) {
+            System.out.println(l);
+            assertTrue(!l.getMessage().toString().isEmpty());
+        }
+        assertTrue(driver.manage().logs().get("browser").getAll().isEmpty());
+    }
+
 
     public String rgb(String color) {
         String[] numbers;
